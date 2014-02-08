@@ -35,8 +35,6 @@ This tool converts the generated binary file into .gdf file that may be loaded t
 
 The soucre code of this program is included in this repository at utils/makefirmware. Compile it with GCC by running command `make` on the same folder (GCC that compiles C code into target system must be installed to the system).
 
-TODO: add compiled makefirmware executable for convenience.
-
 Compiling firmware
 ------------------
 
