@@ -293,10 +293,43 @@ u32 System::getStatusBitsReg() const
 
 s32 System::getInputReferenceValue()
 {
+	static s32 lastPos = 0;
+
 	switch (inputReferenceMode)
 	{
+
 	case Serialonly:
-		return 0;
+		s32 curPos, posDiff, velocity, effects, torque;
+		velocity = getVelocityFeedbackValue();
+		curPos = getPositionFeedbackValue();
+		effects = getEffects();
+
+
+		posDiff = curPos - lastPos;
+		lastPos = curPos;
+
+		joystickPosition += posDiff;
+
+		torque = getTorqueSetpoint();
+
+		if (bool(effects & OSW_EFFECT_DAMPING_ENABLE))
+			torque += getDampingTorque(velocity);
+
+		if (bool(effects & OSW_EFFECT_CENTERSPRING_ENABLE))
+			torque += getSpringTorque(0.99f, joystickPosition, -0.04f, velocity, 0);
+
+	    if (joystickPosition > hardstopsPosition) // hardstop left
+	    	torque += getSpringTorque(25.0f, joystickPosition, -0.22f, velocity, hardstopsPosition);
+	    else if (joystickPosition < 0-hardstopsPosition) // hardstop right
+	    	torque += getSpringTorque(25.0f, joystickPosition, -0.22f, velocity, 0-hardstopsPosition);
+
+	    if (torque > 32767)
+	    	torque = 32767;
+	    else if (torque < -32768)
+	    	torque = -32768;
+
+		return torque;
+
 		break;
 	case Pulsetrain:
 		return digitalCounterInput.getCounter();
@@ -325,6 +358,25 @@ s32 System::getInputReferenceValue()
 	}
 
 	return 0;
+}
+
+s16 System::getDampingTorque(s32 velocity)
+{
+	float b = -0.8;
+	return (s16)(-b * velocity * 10000.0f) * -1;
+}
+
+s16 System::getSpringTorque(float k, s32 x, float b, s32 velocity, s32 offset)
+{
+	s32 torque;
+	torque = ((k * (x - offset) - (b * velocity * 10000.0f)) * -1);
+
+	if (torque > 32767)
+		torque = 32767;
+	else if (torque < -32768)
+		torque = -32768;
+
+	return (s16)torque;
 }
 
 s16 System::getVelocityFeedbackValue()
@@ -648,7 +700,18 @@ bool System::readInitStateFromGC()
 	setBrakePoweronReleaseDelayMs(sys.getParameter(SMP_BRAKE_POWERON_RELEASE_DELAY, fail ));
 	setBrakeEngageDelayMs(sys.getParameter(SMP_BRAKE_STOP_ENGAGE_DELAY, fail ));
 
+	// OpenSimwheel initialization
+	setHardstopsPosition(sys.getParameter(SMP_OSW_HARDSTOPS_POS, fail));
+	setDampingStrength(sys.getParameter(SMP_OSW_EFFECTS_DAMPING_STR, fail));
+	setCenterSpringStrength(sys.getParameter(SMP_OSW_EFFECTS_CENTERSPRING_STR, fail));
 
+	setJoystickPosition(0);
+	setTorqueSetpoint(0);
+
+	setDampingStrength(sys.getParameter(SMP_OSW_EFFECTS_DAMPING_STR, fail));
+	setCenterSpringStrength(sys.getParameter(SMP_OSW_EFFECTS_CENTERSPRING_STR, fail));
+
+	setEffects(sys.getParameter(SMP_OSW_EFFECTS, fail));
 
 	//if any GC command failed
 	if (fail)

@@ -171,6 +171,34 @@ bool SMCommandInterpreter::executeHostSideGlobalSetParamCommand(
 		case SMP_BRAKE_STOP_ENGAGE_DELAY:
 			parentSystem->setBrakeEngageDelayMs(cmd.param*1000);
 			break;
+
+
+		// OpenSimwheel specific params
+
+		case SMP_OSW_TORQUE_SETPOINT:
+			parentSystem->setTorqueSetpoint(cmd.param);
+			break;
+
+		case SMP_OSW_HARDSTOPS_POS:
+			parentSystem->setHardstopsPosition(cmd.param);
+			break;
+
+		case SMP_OSW_EFFECTS_CENTERSPRING_STR:
+			parentSystem->setCenterSpringStrength(cmd.param);
+			break;
+		case SMP_OSW_EFFECTS_DAMPING_STR:
+			parentSystem->setDampingStrength(cmd.param);
+			break;
+
+		case SMP_OSW_JOYSTICK_POS:
+			parentSystem->setJoystickPosition(cmd.param);
+			break;
+
+		case SMP_OSW_EFFECTS:
+			parentSystem->setEffects(cmd.param);
+			break;
+
+
 		default:
 			if (setParamAddr < 200 )
 				//attempt to modify read only or unsupported param causes error status
@@ -292,6 +320,39 @@ bool SMCommandInterpreter::executeHostSideGlobalGetParamCommand(
 		case SMP_FIRMWARE_BACKWARDS_COMP_VERSION:
 			overrideGCreturnPacket=true;
 			retValue=FW_BACKWARDS_COMPATITBLE_VERSION;
+			break;
+
+
+		// OpenSimwheel specific params
+
+		case SMP_OSW_TORQUE_SETPOINT:
+			overrideGCreturnPacket = true;
+			retValue = parentSystem->getTorqueSetpoint();
+			break;
+
+		case SMP_OSW_HARDSTOPS_POS:
+			overrideGCreturnPacket = true;
+			retValue = parentSystem->getHardstopsPosition();
+			break;
+
+		case SMP_OSW_JOYSTICK_POS:
+					overrideGCreturnPacket = true;
+					retValue = parentSystem->getJoystickPosition();
+					break;
+		case SMP_OSW_EFFECTS_DAMPING_STR:
+					overrideGCreturnPacket = true;
+					retValue = parentSystem->getDampingStrength();
+					break;
+
+		case SMP_OSW_EFFECTS_CENTERSPRING_STR:
+					overrideGCreturnPacket = true;
+					retValue = parentSystem->getCenterSpringStrength();
+					break;
+
+
+		case SMP_OSW_EFFECTS:
+			overrideGCreturnPacket = true;
+			retValue = parentSystem->getEffects();
 			break;
 
 		default:

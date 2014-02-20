@@ -270,6 +270,8 @@ public:
 	s16 getVelocityFeedbackValue();
 	u16 getPositionFeedbackValue();
 
+	s16 getDampingTorque(s32 velocity);
+	s16 getSpringTorque(float k, s32 x, float b, s32 velocity, s32 offset);
 
 	//this method has very high priority and is called from isr at 40kHz
 	void highFrequencyISRTask();
@@ -318,6 +320,70 @@ public:
 		return presentControlMode;
 	}
 
+	s32 getDampingStrength()
+	{
+		return dampingStrength;
+	}
+
+	void setDampingStrength(s32 value)
+	{
+		dampingStrength = value;
+	}
+
+	s32 getCenterSpringStrength()
+	{
+		return centerSpringStrength;
+	}
+
+	void setCenterSpringStrength(s32 value)
+	{
+		centerSpringStrength = value;
+	}
+
+	s16 getJoystickPosition()
+	{
+		return joystickPosition;
+	}
+
+	void setJoystickPosition(s32 value)
+	{
+		joystickPosition = (s16)value;
+	}
+
+	void setHardstopsPosition(s32 value)
+	{
+		u16 hardstopsPos;
+		hardstopsPos = (u16)value;
+
+		if (hardstopsPos < 2500) // 90deg
+			hardstopsPos = 2500;
+
+		hardstopsPosition = hardstopsPos;
+	}
+
+	u16 getHardstopsPosition() {
+		return hardstopsPosition;
+	}
+
+	void setTorqueSetpoint(s32 value)
+	{
+		torqueSetpoint = value;
+	}
+
+	s32 getTorqueSetpoint()
+	{
+		return torqueSetpoint;
+	}
+
+	void setEffects(s32 value)
+	{
+		effectsEnabled = value;
+	}
+
+	s32 getEffects()
+	{
+		return effectsEnabled;
+	}
 
 	bool readInitStateFromGC();
 
@@ -355,6 +421,17 @@ private:
 	u32 SignalReg;
 
 	s32 debugParams[3];
+
+	s32 dampingStrength;
+	s32 centerSpringStrength;
+	s32 overallEffectsStrength;
+
+	s16 joystickPosition;
+	u16 hardstopsPosition;
+
+	s32 torqueSetpoint;
+
+	u32 effectsEnabled;
 
 	ControlMode presentControlMode;
 	FeedbackDevice positionFeedbackDevice,velocityFeedbackDevice;
