@@ -72,6 +72,11 @@
 #define SMCMD_INSTANT_CMD SMCMD_ID(4,SMCMD_MASK_N_PARAMS)
 #define SMCMD_INSTANT_CMD_RET SMCMD_ID(4,SMCMD_MASK_N_PARAMS|SMCMD_MASK_RETURN)
 
+// opensimwheel fast command (returns instantly without waiting for GC)
+#define SMCMD_FAST_CMD SMCMD_ID(14,SMCMD_MASK_N_PARAMS)
+#define SMCMD_FAST_CMD_RET SMCMD_ID(14,SMCMD_MASK_N_PARAMS|SMCMD_MASK_RETURN)
+//#define SMCMD_FAST_CMD SMCMD_ID(14,SMCMD_MASK_0_PARAMS)
+//#define SMCMD_FAST_CMD_RET SMCMD_ID(14,SMCMD_MASK_2_PARAMS|SMCMD_MASK_RETURN)
 
 //addr always 0 = read by all nodes
 //payload data is process image. each node takes own process data from offset SMREGISTER_PROC_VARIABLE_OFFSET

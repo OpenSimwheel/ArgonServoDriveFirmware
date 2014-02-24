@@ -299,16 +299,18 @@ s32 System::getInputReferenceValue()
 	{
 
 	case Serialonly:
-		if (presentControlMode == ControlMode::Torque) {
+		s32 curPos, posDiff;
 
-			s32 curPos, posDiff, velocity, torque;
+		curPos = getPositionFeedbackValue();
+
+		posDiff = curPos - lastPos;
+		lastPos = curPos;
+
+		joystickPosition += posDiff;
+
+		if (presentControlMode == Torque) {
+			s32 velocity, torque;
 			velocity = getVelocityFeedbackValue();
-			curPos = getPositionFeedbackValue();
-
-			posDiff = curPos - lastPos;
-			lastPos = curPos;
-
-			joystickPosition += posDiff;
 
 			torque = getTorqueSetpoint() * (getOverallStrength() / 100.0f);
 			// add damping

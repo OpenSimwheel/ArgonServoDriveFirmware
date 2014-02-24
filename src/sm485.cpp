@@ -783,6 +783,45 @@ void SimpleMotionComm::executeSMcmd()
 	}
 	break;
 
+	case SMCMD_FAST_CMD:
+	{
+		rxPos = 0;
+		txPos = 0;
+		int rxDone=0; //numb of cmds executed
+		int txDone=0; //cmdrets
+
+		while (rxPos < receivedPayloadSize || rxDone>txDone ) //loop until all send & received
+		{
+			SMPayloadCommandForQueue newcmd;
+			SMPayloadCommandRet32 customRet;
+
+			bool notenoughdata=false;
+
+			if( rxPos < receivedPayloadSize ) //execute commands
+			{
+				rxPos += extractSMPayloadCommandFromBuffer( payloadIn, newcmd, notenoughdata );
+				parentSystem->setTorqueSetpoint(newcmd.param);
+				rxDone++;
+			}
+
+			customRet.ID = 2;
+			customRet.retData = s32(parentSystem->getJoystickPosition());
+
+			int bytesStored = insertSMPayloadRetToBuffer(payloadOut, customRet);
+
+			txPos += bytesStored;
+			if(bytesStored==0)//buffer full
+			{
+				parentSystem->setFault( FLT_SM485_ERROR, 480503 );
+				makeReturnPacket( SMCMD_ERROR_RET, 0, SMERR_BUF_OVERFLOW );
+			}
+			txDone++;
+		}
+
+		makeReturnPacket( SMCMD_FAST_CMD_RET, payloadOut );
+	}
+	break;
+
 	case SMCMD_ECHO:
 	{
 		u32 i;
