@@ -194,9 +194,13 @@ bool SMCommandInterpreter::executeHostSideGlobalSetParamCommand(
 			parentSystem->setJoystickPosition(cmd.param);
 			break;
 
-		case SMP_OSW_EFFECTS:
-			parentSystem->setEffects(cmd.param);
+		case SMP_OSW_EFFECTS_OVERALL_STR:
+			parentSystem->setOverallStrength(cmd.param);
 			break;
+
+//		case SMP_OSW_EFFECTS:
+//			parentSystem->setEffects(cmd.param);
+//			break;
 
 
 		default:
@@ -349,11 +353,16 @@ bool SMCommandInterpreter::executeHostSideGlobalGetParamCommand(
 					retValue = parentSystem->getCenterSpringStrength();
 					break;
 
+		case SMP_OSW_EFFECTS_OVERALL_STR:
+					overrideGCreturnPacket = true;
+					retValue = parentSystem->getOverallStrength();
+					break;
 
-		case SMP_OSW_EFFECTS:
-			overrideGCreturnPacket = true;
-			retValue = parentSystem->getEffects();
-			break;
+
+//		case SMP_OSW_EFFECTS:
+//			overrideGCreturnPacket = true;
+//			retValue = parentSystem->getEffects();
+//			break;
 
 		default:
 			if (returnParamMaskedAddr < 200)

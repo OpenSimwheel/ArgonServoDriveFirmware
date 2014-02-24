@@ -31,6 +31,8 @@
  * 1005 -resolver development, disabled atm. production testing analog tolerances converted to the new test PCB
  *      -velocity poll time jitter compensation implemented
  * 1006 -production testing fast response test of GPIO removed
+ *
+ * 9001 -first OpenSimwheelTestVersion
  */
 
 /*
@@ -38,7 +40,7 @@
  * -serial comm fails sometimes after FW upgrade and app launch from granity. perhaps address goes wrong or it gets disturbed by serial comm rx too early?
  *
  */
-#define FW_VERSION 1006
+#define FW_VERSION 9001
 #define FW_BACKWARDS_COMPATITBLE_VERSION 1000
 
 #define COMMAND_QUEUE1_SIZE 256
@@ -375,15 +377,25 @@ public:
 		return torqueSetpoint;
 	}
 
-	void setEffects(s32 value)
+	void setOverallStrength(s32 value)
 	{
-		effectsEnabled = value;
+		overallEffectsStrength = value;
 	}
 
-	s32 getEffects()
+	s32 getOverallStrength()
 	{
-		return effectsEnabled;
+		return overallEffectsStrength;
 	}
+//
+//	void setEffects(s32 value)
+//	{
+//		effectsEnabled = value;
+//	}
+//
+//	s32 getEffects()
+//	{
+//		return effectsEnabled;
+//	}
 
 	bool readInitStateFromGC();
 
@@ -431,7 +443,7 @@ private:
 
 	s32 torqueSetpoint;
 
-	u32 effectsEnabled;
+//	u32 effectsEnabled;
 
 	ControlMode presentControlMode;
 	FeedbackDevice positionFeedbackDevice,velocityFeedbackDevice;

@@ -299,37 +299,36 @@ s32 System::getInputReferenceValue()
 	{
 
 	case Serialonly:
-		s32 curPos, posDiff, velocity, effects, torque;
-		velocity = getVelocityFeedbackValue();
-		curPos = getPositionFeedbackValue();
-		effects = getEffects();
+		if (presentControlMode == ControlMode::Torque) {
 
+			s32 curPos, posDiff, velocity, torque;
+			velocity = getVelocityFeedbackValue();
+			curPos = getPositionFeedbackValue();
 
-		posDiff = curPos - lastPos;
-		lastPos = curPos;
+			posDiff = curPos - lastPos;
+			lastPos = curPos;
 
-		joystickPosition += posDiff;
+			joystickPosition += posDiff;
 
-		torque = getTorqueSetpoint();
+			torque = getTorqueSetpoint() * (getOverallStrength() / 100.0f);
+			// add damping
+			torque += (getDampingTorque(velocity) * (getDampingStrength() / 100.0f));
+			// add centerspring
+			torque += (getSpringTorque(1.30f, joystickPosition, -0.04f, velocity, 0) * (getCenterSpringStrength() / 100.0f));
 
-		if (bool(effects & OSW_EFFECT_DAMPING_ENABLE))
-			torque += getDampingTorque(velocity);
+			if (joystickPosition > hardstopsPosition) // hardstop left
+				torque += getSpringTorque(25.0f, joystickPosition, -0.22f, velocity, hardstopsPosition);
+			else if (joystickPosition < 0-hardstopsPosition) // hardstop right
+				torque += getSpringTorque(25.0f, joystickPosition, -0.22f, velocity, 0-hardstopsPosition);
 
-		if (bool(effects & OSW_EFFECT_CENTERSPRING_ENABLE))
-			torque += getSpringTorque(0.99f, joystickPosition, -0.04f, velocity, 0);
+			if (torque > 32767) 		torque = 32767;
+			else if (torque < -32768)  	torque = -32768;
 
-	    if (joystickPosition > hardstopsPosition) // hardstop left
-	    	torque += getSpringTorque(25.0f, joystickPosition, -0.22f, velocity, hardstopsPosition);
-	    else if (joystickPosition < 0-hardstopsPosition) // hardstop right
-	    	torque += getSpringTorque(25.0f, joystickPosition, -0.22f, velocity, 0-hardstopsPosition);
+			return (s16)torque;
+			break;
+		}
 
-	    if (torque > 32767)
-	    	torque = 32767;
-	    else if (torque < -32768)
-	    	torque = -32768;
-
-		return torque;
-
+		return 0;
 		break;
 	case Pulsetrain:
 		return digitalCounterInput.getCounter();
@@ -362,7 +361,7 @@ s32 System::getInputReferenceValue()
 
 s16 System::getDampingTorque(s32 velocity)
 {
-	float b = -0.8;
+	float b = -0.17f;
 	return (s16)(-b * velocity * 10000.0f) * -1;
 }
 
@@ -711,7 +710,7 @@ bool System::readInitStateFromGC()
 	setDampingStrength(sys.getParameter(SMP_OSW_EFFECTS_DAMPING_STR, fail));
 	setCenterSpringStrength(sys.getParameter(SMP_OSW_EFFECTS_CENTERSPRING_STR, fail));
 
-	setEffects(sys.getParameter(SMP_OSW_EFFECTS, fail));
+//	setEffects(sys.getParameter(SMP_OSW_EFFECTS, fail));
 
 	//if any GC command failed
 	if (fail)
