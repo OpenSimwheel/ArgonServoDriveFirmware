@@ -272,8 +272,8 @@ public:
 	s16 getVelocityFeedbackValue();
 	u16 getPositionFeedbackValue();
 
-	s16 getDampingTorque(s32 velocity);
-	s16 getSpringTorque(float k, s32 x, float b, s32 velocity, s32 offset);
+	s16 getDampingTorque(s32 b, s32 velocity);
+	s16 getSpringTorque(s32 k, s32 x, s32 b, s32 velocity, s32 offset);
 
 	//this method has very high priority and is called from isr at 40kHz
 	void highFrequencyISRTask();

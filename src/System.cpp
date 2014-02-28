@@ -309,19 +309,25 @@ s32 System::getInputReferenceValue()
 		joystickPosition += posDiff;
 
 		if (presentControlMode == Torque) {
-			s32 velocity, torque;
+			s32 velocity, torque, dampingStrength, centerSpringStrength;
 			velocity = getVelocityFeedbackValue();
+			dampingStrength = getDampingStrength();
+			centerSpringStrength = getCenterSpringStrength();
 
-			torque = getTorqueSetpoint() * (getOverallStrength() / 100.0f);
+			torque = (getTorqueSetpoint() * getOverallStrength()) / 100;
+
 			// add damping
-			torque += (getDampingTorque(velocity) * (getDampingStrength() / 100.0f));
+			if (dampingStrength > 0)
+				torque += ((getDampingTorque(-80, velocity) * dampingStrength) / 100);
+
 			// add centerspring
-			torque += (getSpringTorque(1.30f, joystickPosition, -0.04f, velocity, 0) * (getCenterSpringStrength() / 100.0f));
+			if (centerSpringStrength > 0)
+				torque += ((getSpringTorque(1300, joystickPosition, -40, velocity, 0) * (centerSpringStrength) / 100));
 
 			if (joystickPosition > hardstopsPosition) // hardstop left
-				torque += getSpringTorque(25.0f, joystickPosition, -0.22f, velocity, hardstopsPosition);
+				torque += getSpringTorque(25000, joystickPosition, -220, velocity, hardstopsPosition);
 			else if (joystickPosition < 0-hardstopsPosition) // hardstop right
-				torque += getSpringTorque(25.0f, joystickPosition, -0.22f, velocity, 0-hardstopsPosition);
+				torque += getSpringTorque(25000, joystickPosition, -220, velocity, 0-hardstopsPosition);
 
 			if (torque > 32767) 		torque = 32767;
 			else if (torque < -32768)  	torque = -32768;
@@ -361,16 +367,20 @@ s32 System::getInputReferenceValue()
 	return 0;
 }
 
-s16 System::getDampingTorque(s32 velocity)
+s16 System::getDampingTorque(s32 b, s32 velocity)
 {
-	float b = -0.17f;
-	return (s16)(-b * velocity * 10000.0f) * -1;
+
+	return (s16)((-b * (velocity * 10000)) / 1000) * -1;
 }
 
-s16 System::getSpringTorque(float k, s32 x, float b, s32 velocity, s32 offset)
+s16 System::getSpringTorque(s32 k, s32 x, s32 b, s32 velocity, s32 offset)
 {
-	s32 torque;
-	torque = ((k * (x - offset) - (b * velocity * 10000.0f)) * -1);
+	s32 torque, springTorque, dampingTorque;
+
+	springTorque = ((k * (x-offset)) / 1000);
+	dampingTorque = getDampingTorque(b, velocity);
+
+	torque = (springTorque - dampingTorque) * -1;
 
 	if (torque > 32767)
 		torque = 32767;
