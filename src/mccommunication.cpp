@@ -105,8 +105,8 @@ void GCCommunicationTask( void *pvParameters )
 	GCRecvPacket RXpacket;
 
 	//decision bytes of what do do for return data once received from GC
-	RingBuffer cmdStream1RetHanlding(4);
-	RingBuffer cmdStream2RetHanlding(4);
+	RingBuffer<u8> cmdStream1RetHanlding(4);
+	RingBuffer<u8> cmdStream2RetHanlding(4);
 	bool handleRetData=false;
 
 	TXpacket.packetType=0;

@@ -121,7 +121,7 @@ void makeProcImageReturnPacket( int my_position )
 #endif
 
 //create actual SM packet to be sent over bus
-void SimpleMotionComm::makeReturnPacket( u8 retid, RingBuffer &returnPayload )
+void SimpleMotionComm::makeReturnPacket( u8 retid, RingBuffer<u8> &returnPayload )
 {
 	int i;
 	u8 data;
@@ -129,7 +129,7 @@ void SimpleMotionComm::makeReturnPacket( u8 retid, RingBuffer &returnPayload )
 
 	if(receivedAddress==SM_BROADCAST_ADDR) return;//don't send reply to broadcasted packets
 
-	int datalen=returnPayload.bytesAvailable();
+	int datalen=returnPayload.getOccupied();
 
 	data = retid;
 	txbyte( data );
@@ -348,7 +348,7 @@ void SimpleMotionComm::bufferedCmdUpdate()
 }
 
 //returns number of bytes used and stores SMP command to newcmd
-int SimpleMotionComm::extractSMPayloadCommandFromBuffer( RingBuffer &buffer, SMPayloadCommandForQueue &newcmd, bool &notEnoughBytes )
+int SimpleMotionComm::extractSMPayloadCommandFromBuffer( RingBuffer<u8> &buffer, SMPayloadCommandForQueue &newcmd, bool &notEnoughBytes )
 {
 	bool readfail=false;
 	u8 readbyte=buffer.peek(readfail);
@@ -362,7 +362,7 @@ int SimpleMotionComm::extractSMPayloadCommandFromBuffer( RingBuffer &buffer, SMP
 
 	if (cmdID == SMPCMD_24B)
 	{
-		if(buffer.bytesAvailable()<3)
+		if(buffer.getOccupied()<3)
 		{
 			notEnoughBytes=true;
 			return 0;
@@ -380,7 +380,7 @@ int SimpleMotionComm::extractSMPayloadCommandFromBuffer( RingBuffer &buffer, SMP
 	}
 	else if (cmdID == SMPCMD_32B)
 	{
-		if(buffer.bytesAvailable()<4)
+		if(buffer.getOccupied()<4)
 		{
 			notEnoughBytes=true;
 			return 0;
@@ -399,7 +399,7 @@ int SimpleMotionComm::extractSMPayloadCommandFromBuffer( RingBuffer &buffer, SMP
 	}
 	else if (cmdID == SMPCMD_SET_PARAM_ADDR) //16bit
 	{
-		if(buffer.bytesAvailable()<2)
+		if(buffer.getOccupied()<2)
 		{
 			notEnoughBytes=true;
 			return 0;
@@ -423,12 +423,12 @@ int SimpleMotionComm::extractSMPayloadCommandFromBuffer( RingBuffer &buffer, SMP
 }
 
 //return number of bytes written
-int SimpleMotionComm::insertSMPayloadRetToBuffer( RingBuffer &buffer,
+int SimpleMotionComm::insertSMPayloadRetToBuffer( RingBuffer<u8> &buffer,
 		SMPayloadCommandRet32 ret )
 {
 	if (ret.ID == SMPRET_32B)
 	{
-		if (buffer.bytesFree() < 4)
+		if (buffer.getFree() < 4)
 		{
 			parentSystem->setFault( FLT_SM485_ERROR, 480401 );
 			//tx payload buffer full
@@ -446,7 +446,7 @@ int SimpleMotionComm::insertSMPayloadRetToBuffer( RingBuffer &buffer,
 	}
 	if (ret.ID == SMPRET_24B)
 	{
-		if (buffer.bytesFree() < 3)
+		if (buffer.getFree() < 3)
 		{
 			parentSystem->setFault( FLT_SM485_ERROR, 480402 );
 			//tx payload buffer full
@@ -463,7 +463,7 @@ int SimpleMotionComm::insertSMPayloadRetToBuffer( RingBuffer &buffer,
 	}
 	if (ret.ID == SMPRET_16B)
 	{
-		if (buffer.bytesFree() < 2)
+		if (buffer.getFree() < 2)
 		{
 			parentSystem->setFault( FLT_SM485_ERROR, 480403 );
 			//tx payload buffer full
@@ -479,7 +479,7 @@ int SimpleMotionComm::insertSMPayloadRetToBuffer( RingBuffer &buffer,
 	}
 	if (ret.ID == SMPRET_CMD_STATUS)
 	{
-		if (buffer.bytesFree() < 1)
+		if (buffer.getFree() < 1)
 		{
 			parentSystem->setFault( FLT_SM485_ERROR, 480404 );
 			//tx payload buffer full
@@ -549,7 +549,7 @@ void SimpleMotionComm::executeSMcmd()
 	{
 		xSemaphoreTake(bufferMutex,portMAX_DELAY);
 
-		if (userCmds.bytesFree() < receivedPayloadSize)
+		if (userCmds.getFree() < receivedPayloadSize)
 		{
 			parentSystem->setFault( FLT_SM485_ERROR, 480501 );
 			makeReturnPacket( SMCMD_ERROR_RET, 0, SMERR_BUF_OVERFLOW );
@@ -557,7 +557,7 @@ void SimpleMotionComm::executeSMcmd()
 		else
 		{
 			//copy payload buffer to to cmd buffer
-			while(payloadIn.bytesAvailable())
+			while(payloadIn.getOccupied())
 			{
 				if( userCmds.put( payloadIn.get() ))
 				{
@@ -565,7 +565,7 @@ void SimpleMotionComm::executeSMcmd()
 				}
 			}
 
-			s16 retbytes = userCmdRets.bytesAvailable();
+			s16 retbytes = userCmdRets.getOccupied();
 			if (retbytes > MAX_PAYLOAD_BYTES)
 				retbytes = MAX_PAYLOAD_BYTES;
 
@@ -826,7 +826,7 @@ void SimpleMotionComm::executeSMcmd()
 	{
 		u32 i;
 		//copy to cmd buffer
-		for( i = 0; i < payloadIn.bytesAvailable(); i++ )
+		for( i = 0; i < payloadIn.getOccupied(); i++ )
 		{
 			txbyte( payloadIn.get() );
 		}
@@ -946,7 +946,7 @@ u8 SimpleMotionComm::poll()
 		}
 
 		//all received
-		if (receivedPayloadSize <= s16(payloadIn.bytesAvailable()))
+		if (receivedPayloadSize <= s16(payloadIn.getOccupied()))
 			receiverNextState = WaitCrcHi;
 
 		return 1;
@@ -996,7 +996,7 @@ u8 SimpleMotionComm::poll()
 	{
 		receivedCRC = calcCRC16( data, receivedCRC );
 		receivedAddress = data; //can be receiver or sender addr depending on cmd
-		if (receivedPayloadSize > payloadIn.bytesAvailable())
+		if (receivedPayloadSize > payloadIn.getOccupied())
 			receiverNextState = WaitPayload;
 		else
 			receiverNextState = WaitCrcHi;
@@ -1189,7 +1189,7 @@ u32 SimpleMotionComm::getSMBusBufferFreeBytes(u16 attribute) const
 	{
 		/* mutex lock not needed because size is atomic integer. value is ok even if updated middle of read */
 //		xSemaphoreTake(bufferMutex,portMAX_DELAY);//FIXME jumii tahan jos buffered cmdssa on taa parsku returndatana
-		int free=userCmds.bytesFree();
+		int free=userCmds.getFree();
 //		xSemaphoreGive(bufferMutex);
 		return free;
 	}

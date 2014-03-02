@@ -189,18 +189,18 @@ private:
 
     void makeReturnPacket(u8 retid, u8 datalen, u8 *cmddata = NULL);
     void makeReturnPacket(u8 retid, u8 byte1, u8 byte2);
-    void makeReturnPacket( u8 retid, RingBuffer &returnPayload );
+    void makeReturnPacket( u8 retid, RingBuffer<u8> &returnPayload );
     bool executeBufferedCmd();
     void executeSMcmd();
     void startProcessingBufferedCommands();
     void resetReceiverState();
     //returns number of bytes used and stores SMP command to newcmd
-    int extractSMPayloadCommandFromBuffer( RingBuffer &buffer, SMPayloadCommandForQueue &newcmd, bool &notEnoughBytes );
+    int extractSMPayloadCommandFromBuffer( RingBuffer<u8> &buffer, SMPayloadCommandForQueue &newcmd, bool &notEnoughBytes );
     //return number of bytes written
-    int insertSMPayloadRetToBuffer( RingBuffer &buffer, SMPayloadCommandRet32 ret );
+    int insertSMPayloadRetToBuffer( RingBuffer<u8> &buffer, SMPayloadCommandRet32 ret );
     int myAddress;
     Serial *comm;
-    RingBuffer userCmds, userCmdRets;
+    RingBuffer<u8> userCmds, userCmdRets;
     u16 smBusClock;//running clock (incremented with GC cycles)
     u16 cmdClock;//clock of current buffer cmds
     s16 receivedPayloadSize/*, recvStorePosition*/; //number of bytes to expect data in cmd, -1=wait cmd header
@@ -218,7 +218,7 @@ private:
     enum RecvState{ WaitCmdId, WaitAddr, WaitPayloadSize, WaitPayload, WaitCrcHi, WaitCrcLo};
     enum RecvState receiverState, receiverNextState;
 
-    RingBuffer payloadIn, payloadOut;
+    RingBuffer<u8> payloadIn, payloadOut;
 
     xQueueHandle localInstantCmdDelayQueue,localBufferedCmdDelayQueue;
     xSemaphoreHandle mutex;

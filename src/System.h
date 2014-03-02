@@ -386,6 +386,21 @@ public:
 	{
 		return overallEffectsStrength;
 	}
+
+	s16 getAvgVelocity() {
+		return avgVelocity;
+	}
+
+	void setNumVelocitySamples(s32 value) {
+		numVelocitySamles = (u8)value;
+
+		velocityBuffer.clear();
+		velocityBuffer.allocate(numVelocitySamles);
+	}
+
+	u8 getNumVelocitySamples() {
+		return numVelocitySamles;
+	}
 //
 //	void setEffects(s32 value)
 //	{
@@ -442,6 +457,11 @@ private:
 	u16 hardstopsPosition;
 
 	s32 torqueSetpoint;
+	s16 avgVelocity;
+
+	u8 numVelocitySamles;
+
+	RingBuffer<s16> velocityBuffer;
 
 //	u32 effectsEnabled;
 

@@ -155,7 +155,6 @@ CPPSRC =  ./src/AnalogIn.cpp \
  ./src/globals.cpp \
  ./src/sm485.cpp \
  ./src/utils.cpp \
- ./src/RingBuffer.cpp \
  ./src/SMCommandQueue.cpp \
  ./src/DSCPowerTask.cpp \
  ./src/SMCommandInterpreter.cpp \

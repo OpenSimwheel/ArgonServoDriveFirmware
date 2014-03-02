@@ -50,6 +50,9 @@ System::System() :
 	positionFeedbackDevice=Encoder;
 	velocityFeedbackDevice=Encoder;
 
+	numVelocitySamles = 1;
+	velocityBuffer.allocate(numVelocitySamles);
+
 	//positionFeedbackDevice=Resolver;
 	//velocityFeedbackDevice=Resolver; //set also  resolver.enableResolverRead(true); later
 
@@ -62,6 +65,7 @@ System::System() :
 	updateSpreadSpectrumClockMode();
 	initGeneralTimer();
 	enableHighFrequencyTask( true );
+
 
 
 
@@ -295,12 +299,12 @@ s32 System::getInputReferenceValue()
 {
 	static s32 lastPos = 0;
 
+
 	switch (inputReferenceMode)
 	{
 
 	case Serialonly:
 		s32 curPos, posDiff;
-
 		curPos = getPositionFeedbackValue();
 
 		posDiff = curPos - lastPos;
@@ -309,8 +313,32 @@ s32 System::getInputReferenceValue()
 		joystickPosition += posDiff;
 
 		if (presentControlMode == Torque) {
-			s32 velocity, torque, dampingStrength, centerSpringStrength;
-			velocity = getVelocityFeedbackValue();
+			s32 torque, dampingStrength, centerSpringStrength, velocity;
+			s16 currentVelocity;
+			currentVelocity = getVelocityFeedbackValue();
+
+			s32 velocitySum;
+			size_t bufferSize;
+
+			velocitySum = 0;
+
+			if (velocityBuffer.getOccupied() == numVelocitySamles) {
+				velocityBuffer.get();
+			}
+
+//			if (velocityBuffer.getFree() > 0) {
+				velocityBuffer.put(currentVelocity);
+//			}
+
+			bufferSize = velocityBuffer.getOccupied();
+
+			for (size_t i = 0; i < bufferSize; i++) {
+				velocitySum += velocityBuffer.peek(i);
+			}
+
+			velocity = ((velocitySum * 100) / (s32)bufferSize);
+			avgVelocity = (s16)velocity;
+
 			dampingStrength = getDampingStrength();
 			centerSpringStrength = getCenterSpringStrength();
 
@@ -370,14 +398,14 @@ s32 System::getInputReferenceValue()
 s16 System::getDampingTorque(s32 b, s32 velocity)
 {
 
-	return (s16)((-b * (velocity * 10000)) / 1000) * -1;
+	return (s16)((-b * (velocity * 10000)) / (100000)) * -1; // 1000*1000 because of multiplier of velocity and b
 }
 
 s16 System::getSpringTorque(s32 k, s32 x, s32 b, s32 velocity, s32 offset)
 {
 	s32 torque, springTorque, dampingTorque;
 
-	springTorque = ((k * (x-offset)) / 1000);
+	springTorque = ((k * (x-offset)) / 1000); // /1000 because of multiplier of k
 	dampingTorque = getDampingTorque(b, velocity);
 
 	torque = (springTorque - dampingTorque) * -1;
@@ -721,6 +749,8 @@ bool System::readInitStateFromGC()
 
 	setDampingStrength(sys.getParameter(SMP_OSW_EFFECTS_DAMPING_STR, fail));
 	setCenterSpringStrength(sys.getParameter(SMP_OSW_EFFECTS_CENTERSPRING_STR, fail));
+
+	setNumVelocitySamples(sys.getParameter(SMP_OSW_VELOCITY_FILTER_SAMPLES, fail));
 
 //	setEffects(sys.getParameter(SMP_OSW_EFFECTS, fail));
 
