@@ -40,7 +40,7 @@
  * -serial comm fails sometimes after FW upgrade and app launch from granity. perhaps address goes wrong or it gets disturbed by serial comm rx too early?
  *
  */
-#define FW_VERSION 9001
+#define FW_VERSION 9003
 #define FW_BACKWARDS_COMPATITBLE_VERSION 1000
 
 #define COMMAND_QUEUE1_SIZE 256
@@ -342,29 +342,36 @@ public:
 		centerSpringStrength = value;
 	}
 
-	s16 getJoystickPosition()
+	s32 getJoystickPosition()
 	{
-		return joystickPosition;
+//		int64_t dividend = (internalPosition * 90 * 32768);
+//		s32 pos = (dividend) / (ppr * (degreesOfRotation / 2));
+
+		s32 pos = ((internalPosition * 360 * 60) / (resolution)) * joystickCoefficient;
+
+		if (pos > 32767)		pos = 32767;
+		else if (pos < -32768) 	pos = -32768;
+
+//		return getPositionFeedbackValue();
+		return (s16)pos;
 	}
 
 	void setJoystickPosition(s32 value)
 	{
-		joystickPosition = (s16)value;
+		internalPosition = (s16)value;
 	}
 
-	void setHardstopsPosition(s32 value)
-	{
-		u16 hardstopsPos;
-		hardstopsPos = (u16)value;
+	void setDegreesOfRotation(s32 value) {
+		if (value < 180)
+			value = 180;
 
-		if (hardstopsPos < 2500) // 90deg
-			hardstopsPos = 2500;
-
-		hardstopsPosition = hardstopsPos;
+		joystickCoefficient = 32768.0f / ((value/2) * 60);
+		hardstopsPosition = (value*60) / 2;
+		degreesOfRotation = (u16)value;
 	}
 
-	u16 getHardstopsPosition() {
-		return hardstopsPosition;
+	u16 getDegreesOfRotation() {
+		return degreesOfRotation;
 	}
 
 	void setTorqueSetpoint(s32 value)
@@ -447,6 +454,11 @@ private:
 	//see enum Signal
 	u32 SignalReg;
 
+
+	bool invertFeedbackDirection;
+
+	s32 ppr;
+
 	s32 debugParams[3];
 
 	s32 dampingStrength;
@@ -454,7 +466,11 @@ private:
 	s32 overallEffectsStrength;
 
 	s16 joystickPosition;
-	u16 hardstopsPosition;
+	s16 internalPosition;
+	u16 degreesOfRotation;
+	s32 hardstopsPosition;
+	float joystickCoefficient;
+	u16 resolution;
 
 	s32 torqueSetpoint;
 	s16 avgVelocity;

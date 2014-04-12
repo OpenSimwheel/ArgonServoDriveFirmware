@@ -47,6 +47,8 @@ System::System() :
 	SignalReg=0;
 	//deviceResetRequested=false;
 
+
+
 	positionFeedbackDevice=Encoder;
 	velocityFeedbackDevice=Encoder;
 
@@ -310,34 +312,20 @@ s32 System::getInputReferenceValue()
 		posDiff = curPos - lastPos;
 		lastPos = curPos;
 
-		joystickPosition += posDiff;
+		internalPosition += posDiff;
+
 
 		if (presentControlMode == Torque) {
-			s32 torque, dampingStrength, centerSpringStrength, velocity;
-			s16 currentVelocity;
+			s32 torque, dampingStrength, centerSpringStrength, velocity, arcminPos, currentVelocity;
+
+
+			arcminPos =  (internalPosition * 5400) / ppr; // simplified from (internalPos*360*60)/(ppr*4)
 			currentVelocity = getVelocityFeedbackValue();
 
-			s32 velocitySum;
-			size_t bufferSize;
+			// velocity in arcmin/sec, simplified from (currentVel*60*360*5*1000)/(ppr*4*2)
+			velocity = (currentVelocity * 13500000) / ppr;
 
-			velocitySum = 0;
 
-			if (velocityBuffer.getOccupied() == numVelocitySamles) {
-				velocityBuffer.get();
-			}
-
-//			if (velocityBuffer.getFree() > 0) {
-				velocityBuffer.put(currentVelocity);
-//			}
-
-			bufferSize = velocityBuffer.getOccupied();
-
-			for (size_t i = 0; i < bufferSize; i++) {
-				velocitySum += velocityBuffer.peek(i);
-			}
-
-			velocity = ((velocitySum * 100) / (s32)bufferSize);
-			avgVelocity = (s16)velocity;
 
 			dampingStrength = getDampingStrength();
 			centerSpringStrength = getCenterSpringStrength();
@@ -346,16 +334,16 @@ s32 System::getInputReferenceValue()
 
 			// add damping
 			if (dampingStrength > 0)
-				torque += ((getDampingTorque(-80, velocity) * dampingStrength) / 100);
+				torque += ((getDampingTorque(-15, velocity) * dampingStrength) / 100);
 
 			// add centerspring
 			if (centerSpringStrength > 0)
-				torque += ((getSpringTorque(1300, joystickPosition, -40, velocity, 0) * (centerSpringStrength) / 100));
+				torque += ((getSpringTorque(5, arcminPos, -5, velocity, 0) * (centerSpringStrength) / 100));
 
-			if (joystickPosition > hardstopsPosition) // hardstop left
-				torque += getSpringTorque(25000, joystickPosition, -220, velocity, hardstopsPosition);
-			else if (joystickPosition < 0-hardstopsPosition) // hardstop right
-				torque += getSpringTorque(25000, joystickPosition, -220, velocity, 0-hardstopsPosition);
+			if (arcminPos > hardstopsPosition) // hardstop left
+				torque += getSpringTorque(20, arcminPos, -10, velocity, hardstopsPosition);
+			else if (arcminPos < 0-hardstopsPosition) // hardstop right
+				torque += getSpringTorque(20, arcminPos, -10, velocity, 0-hardstopsPosition);
 
 			if (torque > 32767) 		torque = 32767;
 			else if (torque < -32768)  	torque = -32768;
@@ -398,14 +386,14 @@ s32 System::getInputReferenceValue()
 s16 System::getDampingTorque(s32 b, s32 velocity)
 {
 
-	return (s16)((-b * (velocity * 10000)) / (100000)) * -1; // 1000*1000 because of multiplier of velocity and b
+	return (s16)(((-b * velocity) * -1) / 100);
 }
 
 s16 System::getSpringTorque(s32 k, s32 x, s32 b, s32 velocity, s32 offset)
 {
 	s32 torque, springTorque, dampingTorque;
 
-	springTorque = ((k * (x-offset)) / 1000); // /1000 because of multiplier of k
+	springTorque = (k * (x-offset));
 	dampingTorque = getDampingTorque(b, velocity);
 
 	torque = (springTorque - dampingTorque) * -1;
@@ -728,6 +716,9 @@ bool System::readInitStateFromGC()
 	bool fail = false;
 
 	//get input reference mode
+
+
+
 	setInputReferenceMode(
 			(InputReferenceMode) sys.getParameter(
 					SMP_INPUT_REFERENCE_MODE, fail ) );
@@ -740,12 +731,21 @@ bool System::readInitStateFromGC()
 	setBrakeEngageDelayMs(sys.getParameter(SMP_BRAKE_STOP_ENGAGE_DELAY, fail ));
 
 	// OpenSimwheel initialization
-	setHardstopsPosition(sys.getParameter(SMP_OSW_HARDSTOPS_POS, fail));
+	invertFeedbackDirection = bool(sys.getParameter(SMP_DRIVE_FLAGS, fail) & FLAG_INVERT_ENCODER);
+	ppr = sys.getParameter(SMP_ENCODER_PPR, fail);
+	resolution = ppr * 4;
+
+	setDegreesOfRotation(sys.getParameter(SMP_OSW_DEGREES_MAX, fail));
 	setDampingStrength(sys.getParameter(SMP_OSW_EFFECTS_DAMPING_STR, fail));
 	setCenterSpringStrength(sys.getParameter(SMP_OSW_EFFECTS_CENTERSPRING_STR, fail));
 
 	setJoystickPosition(0);
 	setTorqueSetpoint(0);
+
+
+
+
+
 
 	setDampingStrength(sys.getParameter(SMP_OSW_EFFECTS_DAMPING_STR, fail));
 	setCenterSpringStrength(sys.getParameter(SMP_OSW_EFFECTS_CENTERSPRING_STR, fail));

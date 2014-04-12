@@ -179,8 +179,8 @@ bool SMCommandInterpreter::executeHostSideGlobalSetParamCommand(
 			parentSystem->setTorqueSetpoint(cmd.param);
 			break;
 
-		case SMP_OSW_HARDSTOPS_POS:
-			parentSystem->setHardstopsPosition(cmd.param);
+		case SMP_OSW_DEGREES_MAX:
+			parentSystem->setDegreesOfRotation(cmd.param);
 			break;
 
 		case SMP_OSW_EFFECTS_CENTERSPRING_STR:
@@ -293,7 +293,9 @@ bool SMCommandInterpreter::executeHostSideGlobalGetParamCommand(
 
 		case SMP_DEBUGPARAM4:
 			overrideGCreturnPacket=true;
-			retValue=parentSystem->getDebugParam(4);
+			retValue=parentSyste
+					//			if (invertFeedbackDirection)
+									velocity = 0-velocity;m->getDebugParam(4);
 			break;
 		case SMP_DEBUGPARAM5:
 			overrideGCreturnPacket=true;
@@ -318,7 +320,9 @@ bool SMCommandInterpreter::executeHostSideGlobalGetParamCommand(
 			break;
 		case SMP_CUMULATIVE_STATUS:
 			overrideGCreturnPacket = true;
-			retValue=retFromGC.retData|cumulativeStatus; //special case, OR the bits with GD and STM
+			retValue=retFromGC.r
+					//			if (invertFeedbackDirection)
+									velocity = 0-velocity;etData|cumulativeStatus; //special case, OR the bits with GD and STM
 			//retValue=cumulativeStatus; //special case, OR the bits with GD and STM
 			break;
 		case SMP_FIRMWARE_VERSION:
@@ -338,9 +342,9 @@ bool SMCommandInterpreter::executeHostSideGlobalGetParamCommand(
 			retValue = parentSystem->getTorqueSetpoint();
 			break;
 
-		case SMP_OSW_HARDSTOPS_POS:
+		case SMP_OSW_DEGREES_MAX:
 			overrideGCreturnPacket = true;
-			retValue = parentSystem->getHardstopsPosition();
+			retValue = parentSystem->getDegreesOfRotation();
 			break;
 
 		case SMP_OSW_JOYSTICK_POS:
