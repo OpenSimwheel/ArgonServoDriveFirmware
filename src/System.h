@@ -33,6 +33,8 @@
  * 1006 -production testing fast response test of GPIO removed
  *
  * 9001 -first OpenSimwheelTestVersion
+ * 9002 -first stable OSW version
+ * 9003 -normalized OSW version to support different motors. complete rewrite of internal processing
  * 1007 -brake released delay changed from 0 to 0.8s
  * 1008 -brake release delay is now parameterizable
  *      -DelayedConditional cleanup & new features
@@ -41,6 +43,7 @@
  *      -production test voltage limits updated accordingly
  *      -sending clear faults cmd now clears also fault location 2 register
  *      -initial resolver support ready
+ * 9100 -merge 9003 with 1009
  */
 
 /*
@@ -48,7 +51,7 @@
  * -serial comm fails sometimes after FW upgrade and app launch from granity. perhaps address goes wrong or it gets disturbed by serial comm rx too early?
  *
  */
-#define FW_VERSION 9003
+#define FW_VERSION 9100
 #define FW_BACKWARDS_COMPATITBLE_VERSION 1000
 
 #define COMMAND_QUEUE1_SIZE 256
