@@ -49,8 +49,9 @@ System::System() :
 
 
 
-	positionFeedbackDevice=Encoder;
-	velocityFeedbackDevice=Encoder;
+	//encoder is the default setting, changed later if configured so
+	positionFeedbackDevice=None;
+	velocityFeedbackDevice=None;
 
 	numVelocitySamles = 1;
 	velocityBuffer.allocate(numVelocitySamles);
@@ -68,10 +69,6 @@ System::System() :
 	initGeneralTimer();
 	enableHighFrequencyTask( true );
 
-
-
-
-//	resolver.enableResolverRead(true);
 
 
 	//s32 testPulseAmpl=0;
@@ -207,8 +204,16 @@ bool System::setParameter( u16 paramID, s32 value, SMCommandQueue &queue )
 	return true;
 }
 
-void System::setFault( u32 faultbits, u32 faultlocation )
+void System::setFault( u32 faultbits, u32 faultlocation)
 {
+	//encoder fault must be sent to GC side too to have desired effect (fault stop)
+	//do this only if encoder fault is not yet set to avoid flooding queue
+	if(((FaultBitsReg&FLT_ENCODER)==0) && (faultbits&FLT_ENCODER))
+	{
+		setParameter(SMP_FAULTS, FLT_ENCODER, SYS_CMD_QUEUE);
+	}
+
+
 	if (FaultBitsReg == 0)
 	{
 		FirstFaultBitsReg = faultbits;
@@ -217,10 +222,7 @@ void System::setFault( u32 faultbits, u32 faultlocation )
 	FaultBitsReg |= faultbits;
 	LastFaultLocation = faultlocation;
 
-	/*if(faultbits&FLT_COMMUNICATION)
-	{
-		NOP;
-	}*/
+
 	//infinite loop for debugging. TODO FIXME remove infinite loop from official code
 	if (faultbits & (FLT_FIRMWARE | FLT_ALLOC))
 	{
@@ -240,7 +242,7 @@ void System::setFault( u32 faultbits, u32 faultlocation )
 void System::clearFaults()
 {
 	FirstFaultBitsReg=FaultBitsReg=0;
-	FirstFaultBitsReg=LastFaultLocation=0;
+	FirstFaultLocation=LastFaultLocation=0;
 }
 
 void System::setInputReferenceMode( InputReferenceMode mode )
@@ -420,6 +422,7 @@ s16 System::getVelocityFeedbackValue()
 	case Resolver:
 		uncompensatedVel=resolver.getVelocity();
 		break;
+	case None:
 	default:
 		uncompensatedVel=0;
 		break;
@@ -454,6 +457,7 @@ u16 System::getPositionFeedbackValue()
 	case Resolver:
 		return resolver.getAngle();
 		break;
+	case None:
 	default:
 		return 0;
 	}
@@ -653,7 +657,7 @@ void System::initGeneralTimer()
 	TIM_Cmd( TIM5, ENABLE );
 }
 
-#define BRAKE_RELEASE_DELAY_MOD 0
+#define BRAKE_RELEASE_DELAY_MOD 1
 void System::updateMechBrakeState()
 {
 	//this function is called at low frequency (~10Hz)
@@ -672,7 +676,10 @@ void System::updateMechBrakeState()
 #elif BRAKE_RELEASE_DELAY_MOD
 
 	static DelayedConditional brakeReleaseDelay(this,0.8,true);
+	brakeReleaseDelay.setDelay((float)getBrakePoweronReleaseDelayMs()/1000.0);
 	bool brakerelease;
+
+	setDebugParam(4,getBrakePoweronReleaseDelayMs());
 
 	if( (GCStatusBits & STAT_BRAKING) || (FaultBitsReg&FATAL_STM32_FW_FAULTS) )
 		brakerelease=false;
@@ -727,8 +734,8 @@ bool System::readInitStateFromGC()
 	setControlMode((ControlMode)sys.getParameter(SMP_CONTROL_MODE, fail ));
 
 	//read brake control registers
-	setBrakePoweronReleaseDelayMs(sys.getParameter(SMP_BRAKE_POWERON_RELEASE_DELAY, fail ));
-	setBrakeEngageDelayMs(sys.getParameter(SMP_BRAKE_STOP_ENGAGE_DELAY, fail ));
+	setBrakePoweronReleaseDelayMs(sys.getParameter(SMP_MECH_BRAKE_RELEASE_DELAY, fail ));
+	setBrakeEngageDelayMs(sys.getParameter(SMP_MECH_BRAKE_ENGAGE_DELAY, fail ));
 
 	// OpenSimwheel initialization
 	invertFeedbackDirection = bool(sys.getParameter(SMP_DRIVE_FLAGS, fail) & FLAG_INVERT_ENCODER);
@@ -746,6 +753,34 @@ bool System::readInitStateFromGC()
 
 
 
+	//set FB1 feedback device source
+	int fb1device=sys.getParameter(SMP_FB1_DEVICE_SELECTION, fail );
+	int fb2device=sys.getParameter(SMP_FB2_DEVICE_SELECTION, fail );
+	switch(fb1device)
+	{
+	case 1:
+		positionFeedbackDevice=Encoder;
+		break;
+	case 3:
+		positionFeedbackDevice=Resolver;
+		resolver.enableResolverRead(true);
+		break;
+	default:
+		setFault(FLT_ENCODER,FAULTLOCATION_BASE+201);//unsupported fb1 device choice
+		positionFeedbackDevice=None;//even when it failed, set to encoder just to ensure a valid value is present in variable
+		break;
+	}
+
+	switch(fb2device)
+	{
+	case 0://same as FB1
+		velocityFeedbackDevice=positionFeedbackDevice;
+		break;
+	default://at the moment no dual loop FB supported so cause fault if FB2 is different from FB1
+		setFault(FLT_ENCODER,FAULTLOCATION_BASE+202);//unsupported fb2 device choice
+		velocityFeedbackDevice=None;//even when it failed, set to encoder just to ensure a valid value is present in variable
+		break;
+	}
 
 	setDampingStrength(sys.getParameter(SMP_OSW_EFFECTS_DAMPING_STR, fail));
 	setCenterSpringStrength(sys.getParameter(SMP_OSW_EFFECTS_CENTERSPRING_STR, fail));
@@ -757,7 +792,7 @@ bool System::readInitStateFromGC()
 	//if any GC command failed
 	if (fail)
 	{
-		sys.setFault( FLT_GC_COMM, 100101 );
+		sys.setFault( FLT_GC_COMM, FAULTLOCATION_BASE+101 );
 		return false;
 	}
 	else

@@ -33,6 +33,14 @@
  * 1006 -production testing fast response test of GPIO removed
  *
  * 9001 -first OpenSimwheelTestVersion
+ * 1007 -brake released delay changed from 0 to 0.8s
+ * 1008 -brake release delay is now parameterizable
+ *      -DelayedConditional cleanup & new features
+ * 1009 -ADC (anain and encoder adc readouts) offset software compensated
+ *      -Gain of encoder ADC input corrected to mach HW better
+ *      -production test voltage limits updated accordingly
+ *      -sending clear faults cmd now clears also fault location 2 register
+ *      -initial resolver support ready
  */
 
 /*
@@ -188,6 +196,7 @@ public:
 	 * 48 sm485
 	 * 60 mccommunication
 	 * 15 System
+	 * 89 ResolverIn
 	 */
 	void setFault( u32 faultbits, u32 faultlocation );
 	void clearFaults(); //clear all faults and fault location
@@ -238,7 +247,7 @@ public:
 	/*Feedback drivers*/
 	EncoderIn encoder;
 	ResolverIn resolver;
-	enum FeedbackDevice { Encoder,Resolver };
+	enum FeedbackDevice { None,Encoder,Resolver };
 
 
 	/* Drive input reference singal methods */
@@ -436,7 +445,7 @@ public:
 		return brakeEngageDelayMs;
 	}
 
-	int getbrakePoweronReleaseDelayUs() const
+	int getBrakePoweronReleaseDelayMs() const
 	{
 		return brakePoweronReleaseDelayMs;
 	}

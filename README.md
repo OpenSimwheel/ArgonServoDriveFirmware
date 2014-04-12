@@ -1,7 +1,7 @@
 Argon servo drive I/O microcontroller firmware
 ==============================================
 
-The I/O side ARM MCU firmware for Granite Devices ARGON servo motor drive.
+The I/O side ARM MCU firmware for [Granite Devices](http://granitedevices.com) [ARGON](http://granitedevices.com/digital-servo-drive-argon) servo motor drive.
 
 DISCLAIMER
 ==========
@@ -11,7 +11,7 @@ Granite Devices or any of it's personnel doesn't take any responsibility of dama
 HOW TO COMPILE
 ==============
 
-*NOTE* This guide is work in progress and incomplete. More information and actual examples will follow later.
+*NOTE* This guide is partially work in progress. More information and actual FW modification examples shall follow later.
 
 Tools needed
 ------------
@@ -48,13 +48,32 @@ Compiling firmware
 
 If so, then just generated argon_bootload_rom.bin is the binary file going to Argon STM32 MCU. Before it can be loaded into drive, it needs to be converted as .gdf file so Granity can use it.
 
-Convert .bin to .gdf with command:
-makefirmware argon.gdf argon_bootload_rom.bin
+Convert .bin to .gdf with command: `makefirmware argon.gdf agron_bootload_rom.bin`. Makefirmware is available under utils/makefirmware folder.
 
 A sucecssfull run of makefirmware will output something like:
 
 		Create file 'argon.gdf'
 		Input size=39824 bytes, output=39824 bytes
 
-The argon.gdf may be now loaded into Argon with Granity. Be informed that Granite Devices doesn't take any responsibility of damages or losses caused by customzed or user compiled firmware files! It is possible to compile firmware a way that breaks the hardware or causes danger or damage to users or their property.
+Installing firmware
+===================
+
+Before uploading the newly compiled FW, make sure that you already have the latest available [official Argon FW release](http://granitedevices.com/wiki/Argon_firmware_releases) installed in the drive because the custom I/O side firmware will not affect or upgrade GraniteCore version in the drive. Once latest official FW is present in the drive, continue uploading your newly built argon.gdf by following the FW upgrade [instructions](http://granitedevices.com/wiki/Firmware). 
+
+Be informed that Granite Devices doesn't take any responsibility of damages or losses caused by customzed or user compiled firmware files! It is possible to compile firmware a way that breaks the hardware or causes danger or damage to users or their property.
+
+Development tips
+================
+
+Avoid the usage of following C/C++ functionality due to embedded system restrictions (memory footprint, performance reasons etc):
+
+- new and delete operators - make only static instances of classes
+- virtual methods
+- free() function (however malloc() is ok for static buffer allocation)
+- math functions (sin, cos, sqrt) due to slow execution, however basic single precision floating point arithmetics is pretty fast (+,-,/,*)
+
+SUPPORT
+=======
+
+The source is released "as is" without a promise to provide support on any topic related to it. To inquire development support service or customization jobs, send a message through http://granitedevices.com/support. Granite Devices offers I/O side, as well GraniteCore, firmware customization work on hourly rated fee.
 
