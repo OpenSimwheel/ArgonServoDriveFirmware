@@ -294,9 +294,7 @@ bool SMCommandInterpreter::executeHostSideGlobalGetParamCommand(
 
 		case SMP_DEBUGPARAM4:
 			overrideGCreturnPacket=true;
-			retValue=parentSyste
-					//			if (invertFeedbackDirection)
-									velocity = 0-velocity;m->getDebugParam(4);
+			retValue=parentSystem->getDebugParam(4);
 			break;
 		case SMP_DEBUGPARAM5:
 			overrideGCreturnPacket=true;
@@ -321,9 +319,7 @@ bool SMCommandInterpreter::executeHostSideGlobalGetParamCommand(
 			break;
 		case SMP_CUMULATIVE_STATUS:
 			overrideGCreturnPacket = true;
-			retValue=retFromGC.r
-					//			if (invertFeedbackDirection)
-									velocity = 0-velocity;etData|cumulativeStatus; //special case, OR the bits with GD and STM
+			retValue=retFromGC.retData|cumulativeStatus; //special case, OR the bits with GD and STM
 			//retValue=cumulativeStatus; //special case, OR the bits with GD and STM
 			break;
 		case SMP_FIRMWARE_VERSION:
