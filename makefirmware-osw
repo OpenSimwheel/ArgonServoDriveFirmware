@@ -1,0 +1,9 @@
+#!/bin/bash
+
+./utils/makefirmware/makefirmware ./opensimwheel-temp-latest.gdf ./argon_bootload_rom.bin
+
+now=$(date +"%Y%m%d-%H%M")
+
+mv ./opensimwheel-temp-latest.gdf ~/Shared/opensimwheel-alpha-$now.gdf
+
+echo "Moved file (opensimwheel-alpha-$now.gdf) to shared folder. Done."
