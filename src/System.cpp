@@ -347,8 +347,8 @@ s32 System::getInputReferenceValue()
 			else if (arcminPos < 0-hardstopsPosition) // hardstop right
 				torque += getSpringTorque(20, arcminPos, -10, velocity, 0-hardstopsPosition);
 
-			if (torque > 32767) 		torque = 32767;
-			else if (torque < -32768)  	torque = -32768;
+			if (torque > 16383) 		torque = 16383;
+			else if (torque < -16384)  	torque = -16384;
 
 			return (s16)torque;
 			break;
