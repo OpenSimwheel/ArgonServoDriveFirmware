@@ -363,12 +363,20 @@ s32 System::getInputReferenceValue()
 		return digitalCounterInput.getCounter();
 		break;
 	case PWM:
-		if(physIO.getAnalogInput2()<4915) //non inverted if anain2<3.0V
-			return (digitalCounterInput.getCounter()+16384)/2;
-		else//inverted analog if anain2=3-24V
-			return (-((digitalCounterInput.getCounter()+16384)/2));
+		setDebugParam(5, physIO.getAnalogInput2());
+		setDebugParam(6,digitalCounterInput.getCounter());
 
-		return digitalCounterInput.getCounter();
+		if (digitalCounterInput.getCounter() == 0)
+			return 0;
+
+		if (physIO.getAnalogInput2() < 2500) //non inverted if anain2<3.0V // original value was 4915
+			return (0 - ( digitalCounterInput.getCounter() + 16384)) / 2;
+		else//inverted analog if anain2=3-24V
+			return (digitalCounterInput.getCounter()+16384) / 2;
+
+
+
+		return 0-digitalCounterInput.getCounter();
 		break;
 	case Analog:
 		if(physIO.getAnalogInput2()<4915) //non inverted analog1 if anain2<3.0V
