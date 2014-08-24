@@ -16,6 +16,7 @@
 #include "sm485.h"
 #include "DigitalCounterInput.h"
 #include "ResolverIn.h"
+#include "MovingAverage.h"
 
 #define VSDR_049_HW_ID 3999 /* must change this BL on prototypes if in use! now its 4000*/
 #define VSDR_HW_ID 4000
@@ -51,7 +52,7 @@
  * -serial comm fails sometimes after FW upgrade and app launch from granity. perhaps address goes wrong or it gets disturbed by serial comm rx too early?
  *
  */
-#define FW_VERSION 9201
+#define FW_VERSION 9202
 #define FW_BACKWARDS_COMPATITBLE_VERSION 1000
 
 #define COMMAND_QUEUE1_SIZE 256
@@ -410,26 +411,15 @@ public:
 		return avgVelocity;
 	}
 
-	void setNumVelocitySamples(s32 value) {
-		numVelocitySamles = (u8)value;
-
-		velocityBuffer.clear();
-		velocityBuffer.allocate(numVelocitySamles);
+	void setNumFilterSamples(s32 value) {
+		numFilterSamples = u16(value);
+		smoothingFilter.setNumSamples(numFilterSamples);
 	}
 
-	u8 getNumVelocitySamples() {
-		return numVelocitySamles;
+	u16 getNumFilterSamples() {
+		return smoothingFilter.getNumSamples();
 	}
-//
-//	void setEffects(s32 value)
-//	{
-//		effectsEnabled = value;
-//	}
-//
-//	s32 getEffects()
-//	{
-//		return effectsEnabled;
-//	}
+
 
 	bool readInitStateFromGC();
 
@@ -487,9 +477,10 @@ private:
 	s32 torqueSetpoint;
 	s16 avgVelocity;
 
-	u8 numVelocitySamles;
+	u16 numFilterSamples;
 
-	RingBuffer<s16> velocityBuffer;
+
+	MovingAverage smoothingFilter;
 
 //	u32 effectsEnabled;
 

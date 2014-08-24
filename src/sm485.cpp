@@ -812,6 +812,7 @@ void SimpleMotionComm::executeSMcmd()
 			if (sendNow) {
 				customRet.ID = 1;
 				customRet.retData = parentSystem->getJoystickPosition();
+//				customRet.retData = parentSystem->getInputReferenceValue();
 
 				int bytesStored = insertSMPayloadRetToBuffer(payloadOut, customRet);
 				txPos += bytesStored;

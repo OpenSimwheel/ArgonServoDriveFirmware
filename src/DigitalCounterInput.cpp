@@ -260,11 +260,12 @@ s32 DigitalCounterInput::getCounter()
 
 		if (noPWMsignal == false)
 		{
-			/* Duty cycle computation */
-			//s32 DutyCycle = s32((uint64_t(pulselength) * 100000ULL) / (period)); //0-100000 scale
-			s32 DutyCycle = s32(
-					(uint64_t( pulselength ) * 32786ULL) / (period) ) - 16384; //-16k..16k scale
-			return DutyCycle;
+			 /* Duty cycle computation */
+			    //s32 DutyCycle = s32((uint64_t(pulselength) * 100000ULL) / (period));                 //0-100000 scale
+			    //s32 DutyCycle = s32((uint64_t( pulselength ) * 32786ULL) / (period) ) - 16384; //-16k..16k scale
+
+			     s32 DutyCycle = s32((uint64_t( pulselength ) * 16383ULL) / (period) );                 //0-16383 scale ( ~ 0 - 99.99%)
+			    return DutyCycle;
 		}
 		else
 			//cant div by zero, probably no input edges present

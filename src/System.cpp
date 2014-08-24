@@ -53,8 +53,10 @@ System::System() :
 	positionFeedbackDevice=None;
 	velocityFeedbackDevice=None;
 
-	numVelocitySamles = 1;
-	velocityBuffer.allocate(numVelocitySamles);
+	numFilterSamples = 10;
+	smoothingFilter.setNumSamples(numFilterSamples);
+
+
 
 	//positionFeedbackDevice=Resolver;
 	//velocityFeedbackDevice=Resolver; //set also  resolver.enableResolverRead(true); later
@@ -364,24 +366,45 @@ s32 System::getInputReferenceValue()
 		break;
 	case PWM:
 	{
-		s32 counter = digitalCounterInput.getCounter();
+	  s32 counter = digitalCounterInput.getCounter();           // Get Duty Cycle (0-16383 scale)
 
-		if (counter == 0)
-		{
-			counter = physIO.dinHSIN2.inputState() ? 16384 : 0;
+		if ((counter == 0) && (physIO.dinHSIN2.inputState() == true))     // Counter 0 -> check PWM Pin state (J5 Pin6)
+			counter = 16384;                                     // PWM Pin high -> Set 100%
 
-			if (counter == 0)
-				return 0;
+		if (physIO.dinHSIN1.inputState() == false)                     // check Dir pin state(J5 Pin4)
+			counter = -counter;                                   // 0 - 16384
+
+		if (numFilterSamples == 0) {
+			return counter;
+		} else {
+			/*
+			s32 smoothenedCounterSum;
+			smoothenedCounterSum = 0;
+
+			int numSamples = smoothingFilterBuffer.getOccupied();
+
+			// get the last value if buffer is full
+			if (numSamples >= numFilterSamples)
+				smoothingFilterBuffer.get();
+
+			smoothingFilterBuffer.put(counter);
+			numSamples++;
+
+
+			for (int i = 0; i < numSamples; i++) {
+				smoothenedCounterSum += smoothingFilterBuffer.peek(i);
+			}
+
+			return smoothenedCounterSum / numSamples;
+			*/
+
+			smoothingFilter.addSample(counter);
+			return smoothingFilter.getAverage();
 		}
 
-		if (physIO.getAnalogInput2() < 2500) //non inverted if anain2<3.0V // original value was 4915
-			return (0 - ( counter + 16384)) / 2;
-		else//inverted analog if anain2=3-24V
-			return (counter +16384) / 2;
 
 
 
-		return 0-digitalCounterInput.getCounter();
 		break;
 	}
 	case Analog:
@@ -804,7 +827,10 @@ bool System::readInitStateFromGC()
 	setDampingStrength(sys.getParameter(SMP_OSW_EFFECTS_DAMPING_STR, fail));
 	setCenterSpringStrength(sys.getParameter(SMP_OSW_EFFECTS_CENTERSPRING_STR, fail));
 
-	setNumVelocitySamples(sys.getParameter(SMP_OSW_VELOCITY_FILTER_SAMPLES, fail));
+//	setNumFilterSamples(sys.getParameter(SMP_OSW_FILTER_SAMPLES, fail));
+	setNumFilterSamples(10);
+	sys.setParameter(SMP_TORQUE_LPF_BANDWIDTH, 4);
+//	sys.setParameter(SMP_DRIVE_FLAGS, FLAG_USE_INPUT_LP_FILTER)
 
 //	setEffects(sys.getParameter(SMP_OSW_EFFECTS, fail));
 

@@ -199,8 +199,8 @@ bool SMCommandInterpreter::executeHostSideGlobalSetParamCommand(
 			parentSystem->setOverallStrength(cmd.param);
 			break;
 
-		case SMP_OSW_VELOCITY_FILTER_SAMPLES:
-			parentSystem->setNumVelocitySamples((s32)cmd.param);
+		case SMP_OSW_FILTER_SAMPLES:
+			parentSystem->setNumFilterSamples((s32)cmd.param);
 			break;
 
 //		case SMP_OSW_EFFECTS:
@@ -368,9 +368,9 @@ bool SMCommandInterpreter::executeHostSideGlobalGetParamCommand(
 			retValue = parentSystem->getAvgVelocity();
 			break;
 
-		case SMP_OSW_VELOCITY_FILTER_SAMPLES:
+		case SMP_OSW_FILTER_SAMPLES:
 			overrideGCreturnPacket = true;
-			retValue = parentSystem->getNumVelocitySamples();
+			retValue = parentSystem->getNumFilterSamples();
 			break;
 
 //		case SMP_OSW_EFFECTS:
