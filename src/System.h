@@ -16,7 +16,6 @@
 #include "sm485.h"
 #include "DigitalCounterInput.h"
 #include "ResolverIn.h"
-#include "MovingAverage.h"
 
 #define VSDR_049_HW_ID 3999 /* must change this BL on prototypes if in use! now its 4000*/
 #define VSDR_HW_ID 4000
@@ -45,6 +44,7 @@
  *      -sending clear faults cmd now clears also fault location 2 register
  *      -initial resolver support ready
  * 9100 -merge 9003 with 1009
+ * 9203 -fix wheelspin when no pwm input connected
  */
 
 /*
@@ -52,7 +52,7 @@
  * -serial comm fails sometimes after FW upgrade and app launch from granity. perhaps address goes wrong or it gets disturbed by serial comm rx too early?
  *
  */
-#define FW_VERSION 9202
+#define FW_VERSION 9203
 #define FW_BACKWARDS_COMPATITBLE_VERSION 1000
 
 #define COMMAND_QUEUE1_SIZE 256
@@ -413,11 +413,11 @@ public:
 
 	void setNumFilterSamples(s32 value) {
 		numFilterSamples = u16(value);
-		smoothingFilter.setNumSamples(numFilterSamples);
+
 	}
 
 	u16 getNumFilterSamples() {
-		return smoothingFilter.getNumSamples();
+		return numFilterSamples;
 	}
 
 
@@ -480,7 +480,6 @@ private:
 	u16 numFilterSamples;
 
 
-	MovingAverage smoothingFilter;
 
 //	u32 effectsEnabled;
 

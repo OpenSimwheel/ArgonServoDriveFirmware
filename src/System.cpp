@@ -53,11 +53,6 @@ System::System() :
 	positionFeedbackDevice=None;
 	velocityFeedbackDevice=None;
 
-	numFilterSamples = 10;
-	smoothingFilter.setNumSamples(numFilterSamples);
-
-
-
 	//positionFeedbackDevice=Resolver;
 	//velocityFeedbackDevice=Resolver; //set also  resolver.enableResolverRead(true); later
 
@@ -70,8 +65,6 @@ System::System() :
 	updateSpreadSpectrumClockMode();
 	initGeneralTimer();
 	enableHighFrequencyTask( true );
-
-
 
 	//s32 testPulseAmpl=0;
 	//s32 testPulsePause=0;
@@ -366,45 +359,12 @@ s32 System::getInputReferenceValue()
 		break;
 	case PWM:
 	{
-	  s32 counter = digitalCounterInput.getCounter();           // Get Duty Cycle (0-16383 scale)
+		s32 counter = digitalCounterInput.getCounter();	// Get Duty Cycle (0-16383 scale)
 
-		if ((counter == 0) && (physIO.dinHSIN2.inputState() == true))     // Counter 0 -> check PWM Pin state (J5 Pin6)
-			counter = 16384;                                     // PWM Pin high -> Set 100%
+		if (physIO.dinHSIN1.inputState() == false)     // check Dir pin state(J5 Pin4)
+			counter = -counter;                        // 0 - 16384
 
-		if (physIO.dinHSIN1.inputState() == false)                     // check Dir pin state(J5 Pin4)
-			counter = -counter;                                   // 0 - 16384
-
-		if (numFilterSamples == 0) {
-			return counter;
-		} else {
-			/*
-			s32 smoothenedCounterSum;
-			smoothenedCounterSum = 0;
-
-			int numSamples = smoothingFilterBuffer.getOccupied();
-
-			// get the last value if buffer is full
-			if (numSamples >= numFilterSamples)
-				smoothingFilterBuffer.get();
-
-			smoothingFilterBuffer.put(counter);
-			numSamples++;
-
-
-			for (int i = 0; i < numSamples; i++) {
-				smoothenedCounterSum += smoothingFilterBuffer.peek(i);
-			}
-
-			return smoothenedCounterSum / numSamples;
-			*/
-
-			smoothingFilter.addSample(counter);
-			return smoothingFilter.getAverage();
-		}
-
-
-
-
+		return counter;
 		break;
 	}
 	case Analog:
@@ -828,8 +788,7 @@ bool System::readInitStateFromGC()
 	setCenterSpringStrength(sys.getParameter(SMP_OSW_EFFECTS_CENTERSPRING_STR, fail));
 
 //	setNumFilterSamples(sys.getParameter(SMP_OSW_FILTER_SAMPLES, fail));
-	setNumFilterSamples(10);
-	sys.setParameter(SMP_TORQUE_LPF_BANDWIDTH, 4);
+//	sys.setParameter(SMP_TORQUE_LPF_BANDWIDTH, 4); //470Hz
 //	sys.setParameter(SMP_DRIVE_FLAGS, FLAG_USE_INPUT_LP_FILTER)
 
 //	setEffects(sys.getParameter(SMP_OSW_EFFECTS, fail));
