@@ -751,7 +751,7 @@ bool System::readInitStateFromGC()
 	setJoystickPosition(0);
 	setTorqueSetpoint(0);
 
-
+//	sys.setParameter(SMP_TORQUE_LPF_BANDWIDTH, sys.getParameter(SMP_TORQUE_LPF_BANDWIDTH, fail)); // Read out saved torque bandwidth
 
 
 

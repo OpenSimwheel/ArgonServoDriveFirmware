@@ -45,6 +45,7 @@
  *      -initial resolver support ready
  * 9100 -merge 9003 with 1009
  * 9203 -fix wheelspin when no pwm input connected
+ * 9204 -fix non working TBW value
  */
 
 /*
@@ -52,7 +53,7 @@
  * -serial comm fails sometimes after FW upgrade and app launch from granity. perhaps address goes wrong or it gets disturbed by serial comm rx too early?
  *
  */
-#define FW_VERSION 9203
+#define FW_VERSION 9204
 #define FW_BACKWARDS_COMPATITBLE_VERSION 1000
 
 #define COMMAND_QUEUE1_SIZE 256

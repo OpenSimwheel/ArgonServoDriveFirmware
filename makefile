@@ -148,7 +148,6 @@ SRC  = ./cmsis/core/core_cm3.c \
 # C++ sources here
 CPPSRC =  ./src/AnalogIn.cpp \
  ./src/main.cpp \
- ./src/MovingAverage.cpp \
  ./src/Serial.cpp \
  ./src/stm32f2xx_it.cpp \
  ./src/mccommunication.cpp \
