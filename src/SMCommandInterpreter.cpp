@@ -19,6 +19,7 @@ SMCommandInterpreter::SMCommandInterpreter( System *parent)
 	returnParamLength = SMPRET_CMD_STATUS;
 	lastReturnStatus = SMP_CMD_STATUS_ACK;
 	parentSystem=parent;
+	setIgnoreSetpointCommands(false);
 }
 
 SMCommandInterpreter::~SMCommandInterpreter()
@@ -269,6 +270,10 @@ bool SMCommandInterpreter::executeHostSideGlobalGetParamCommand(
 		case SMP_BUFFER_FREE_BYTES:
 			overrideGCreturnPacket = true;
 			retValue = parentSystem->SMComm.getSMBusBufferFreeBytes(returnParamAttribute);
+			break;
+		case SMP_FAULT_BEHAVIOR:
+			overrideGCreturnPacket = true;
+			retValue = parentSystem->SMComm.getSMBusFaultBehavior(returnParamAttribute);
 			break;
 
 		case SMP_DIGITAL_IN_VALUES_1:

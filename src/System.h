@@ -46,6 +46,16 @@
  * 9100 -merge 9003 with 1009
  * 9203 -fix wheelspin when no pwm input connected
  * 9204 -fix non working TBW value
+ * 1010 -fix pulse&dir problem with noisy direction signal causing errorenous direction states
+ * 1011(WIP, merged development & master branch):
+ *      -implement second PWM setpoint input, uses analog input pins, see digitalcounterinput.cpp for usage
+ * 		-change dscpowertask to use TIM8 instead of TIM1 (TODO: verify by measuring)
+ * 1090 -ported IONI features: new setpoint calculation (Ioni style simplified setpoint handling: drive setpoint is a sum of phyiscal setpoint (step/dir, pwm, analog etc) and the setpoint from SM host (instant and buffered commands). If SM host sets absolute setpoint, then phyiscal counter (incremental types onle) are reset to zero.)
+ * 		-support PWM+dir and Analog+dir setpoints with on/off option in Granity
+ * 		-Increase ADC sampling time (in hope that it reduces ADC channel crosstalk)
+ * 		-requires GraniteCore FW version 1090 or later
+ * 		-reduce fault sensitivity of resolver input
+ * 		-added simulated encoder output feature
  */
 
 /*
@@ -53,8 +63,8 @@
  * -serial comm fails sometimes after FW upgrade and app launch from granity. perhaps address goes wrong or it gets disturbed by serial comm rx too early?
  *
  */
-#define FW_VERSION 9204
-#define FW_BACKWARDS_COMPATITBLE_VERSION 1000
+#define FW_VERSION 1090
+#define FW_BACKWARDS_COMPATITBLE_VERSION 1090
 
 #define COMMAND_QUEUE1_SIZE 256
 #define COMMAND_QUEUE2_SIZE 256
@@ -283,11 +293,22 @@ public:
 	u32 getStatusBitsReg() const;
 	u32 getFirstFaultBitsReg() const;
 
+	//these should be called only by MCcomm task once per 400us cycle, use getLastPositionFeedbackValue() from elsewhere
 	s16 getVelocityFeedbackValue();
 	u16 getPositionFeedbackValue();
 
 	s16 getDampingTorque(s32 b, s32 velocity);
 	s16 getSpringTorque(s32 k, s32 x, s32 b, s32 velocity, s32 offset);
+	u16 getLastPositionFeedbackValue(){ return lastPositionFBValue; }
+	//for emulated encoder output. outputs true one time after feedback device index has been passed
+	//flaw: this method is inaccurate if speed is above 2500 counts/s
+	bool simulatedIndexPulseOutNow()
+	{
+		bool ret=indexHasOccurred;
+		indexHasOccurred=false;
+		return ret;
+	}
+	
 
 	//this method has very high priority and is called from isr at 40kHz
 	void highFrequencyISRTask();
@@ -443,6 +464,35 @@ public:
 	{
 		return brakePoweronReleaseDelayMs;
 	}
+	
+
+	FeedbackDevice getCurrentPositionFeedbackDevice()
+	{
+		return positionFeedbackDevice;
+	}
+
+	bool indexHasOccurred;
+
+	//return true if flag bit is on (drive config param flags). See FLAG_DISABLED_AT_STARTUP etc defines
+	bool isFlagBit(u32 bit)
+	{
+		return DriveFlagBits&bit;
+	}
+
+	void setSerialSetpoint(s32 setp)
+	{
+		serialSetpoint=setp;
+		resetPhyiscalSetpoint();
+	}
+	void incrementSerialSetpoint(s32 setp)
+	{
+		serialSetpoint+=setp;
+	}
+
+	void resetPhyiscalSetpoint()
+	{
+		digitalCounterInput.setCounter(0);
+	}
 
 private:
 	//these registers are for local STM side status&faults. for GC side registers, see GCStatusBits etc
@@ -456,6 +506,8 @@ private:
 	//code elsewhere polls bits in this register and act if 1.
 	//see enum Signal
 	u32 SignalReg;
+	u32 DriveFlagBits;
+	s32 setpointOffset;
 
 
 	bool invertFeedbackDirection;
@@ -467,6 +519,8 @@ private:
 	s32 dampingStrength;
 	s32 centerSpringStrength;
 	s32 overallEffectsStrength;
+	//last setpoint value from SM host
+	s32 serialSetpoint;
 
 	s16 joystickPosition;
 	s16 internalPosition;
@@ -508,6 +562,8 @@ private:
 
     int brakePoweronReleaseDelayMs;
     int brakeEngageDelayMs;
+	
+	u16 lastPositionFBValue;
 };
 
 #endif /* SYSTEM_H_ */
